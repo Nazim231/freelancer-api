@@ -10,7 +10,7 @@ class Auth {
             _id: user._id,
             email: user.email,
             password: user.password,
-            role: user.role
+            role: user.role.name
         };
         return sign(userData, secretKey);
     }

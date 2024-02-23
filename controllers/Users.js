@@ -88,31 +88,38 @@ class User {
             });
         }
 
-        // finding user
-        // ! getting user role as 'undefined'.
-        // TODO: implement aggregation to find the user with its role.
-        await users.findOne({ email }).then((user) => {
-            if (!user) {
-                // user not found with email
-                return res.status(404).json({
-                    message: "User doesn't exists, please check your email.",
+        // validating user
+        await users
+            .aggregate([
+                { $match: { email: email } },
+                {
+                    $lookup: {
+                        from: "roles",
+                        localField: "role_id",
+                        foreignField: "_id",
+                        as: "role",
+                    },
+                },
+            ])
+            .then(async (user) => {
+                if (!user) {
+                    return res.status(404).json({
+                        message:
+                            "User doesn't exists, please check your username",
+                    });
+                }
+                user = user[0];
+                if (!(await brcrypt.compare(password, user.password))) {
+                    return res.status(400).json({
+                        message: "Password doesn't match, please check again.",
+                    });
+                }
+                const token = auth.createUser(user);
+                res.cookie("token", token); // sending the auth token as cookie to user
+                return res.json({
+                    message: "User logged in successfully",
                 });
-            }
-            if (!brcrypt.compare(password, user.password)) {
-                // password doesn't match
-                return res.status(404).json({
-                    message: "Incorrect password, please try again.",
-                });
-            }
-            // assigning token to user
-            const accessToken = auth.createUser(user);
-            console.log(user.role);
-            res.cookie("token", accessToken); // sending the token to the user
-            return res.json({
-                message: "User Logged in successfully",
-                role: user.role,
             });
-        });
     }
 }
 
