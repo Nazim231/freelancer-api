@@ -5,6 +5,9 @@ import { user as users } from "../models/users.js";
 import { auth } from "../services/auth.js";
 
 class User {
+    /*
+     handle signup
+    */
     async signup(req, res) {
         const { name, email, password, confirm_password, role } = req.body;
         let { phone } = req.body;
@@ -56,20 +59,30 @@ class User {
             role_id: roleData._id,
         };
 
-        const newUser = await users.create(userData).catch((err) => {
-            return res.json({
-                message: "Failed to create user",
-                error: String(err),
+        await users
+            .create(userData)
+            .then((newUser) => {
+                if (newUser) {
+                    return res.json({
+                        message: "User Created Successfully",
+                    });
+                } else {
+                    return res.status(400).json({
+                        message: "Failed to create user, please try again",
+                    });
+                }
+            })
+            .catch((err) => {
+                return res.json({
+                    message: "Failed to create user",
+                    error: String(err),
+                });
             });
-        });
-
-        if (newUser) {
-            return res.json({
-                message: "User Created Successfully",
-            });
-        }
     }
 
+    /*
+     handle user login
+    */
     async login(req, res) {
         const { email, password } = req.body;
 
@@ -100,6 +113,7 @@ class User {
                         as: "role",
                     },
                 },
+                { $unwind: "$role" },
             ])
             .then(async (user) => {
                 if (!user) {
@@ -118,6 +132,12 @@ class User {
                 res.cookie("token", token); // sending the auth token as cookie to user
                 return res.json({
                     message: "User logged in successfully",
+                });
+            })
+            .catch((err) => {
+                return res.json({
+                    message: "Some Error Occured",
+                    error: err,
                 });
             });
     }
