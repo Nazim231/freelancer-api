@@ -1,6 +1,10 @@
 import { job } from "../models/jobs.js";
 import { category } from "../models/categories.js";
 
+/*
+ TODO : Add the Tags specified over the job to the Database
+*/
+
 class Jobs {
     async addJob(req, res) {
         const jobData = req.body;
@@ -38,8 +42,25 @@ class Jobs {
                     message: "Invalid Category",
                 });
             });
-        
-        // TODO: Add the Images if the images are received.
+
+        const getImagesURL = () => {
+            if (!req.body.images) return [];
+            
+            const images = [];
+            if (req.body.images) {
+                // converting the string of URLs to array of URLs
+                let imgString = req.body.images;
+                imgString = imgString.slice(1,-1);
+                imgString = imgString.split(',');
+                const imgArray = imgString.map(img => img.trim().slice(1, -1))
+                imgArray.forEach((image, index) => {
+                    images[index] = {
+                        image: image
+                    }
+                });
+            }
+            return images;
+        }
 
         const finalData = {
             title: jobData.title,
@@ -49,7 +70,8 @@ class Jobs {
             currency: jobData.currency,
             time_limit: jobData.time_limit,
             payment_type: jobData.payment_type,
-            posted_by: req.user._id
+            posted_by: req.user._id,
+            images: getImagesURL()
         }
 
         await job.create(finalData).then((result) => {
